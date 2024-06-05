@@ -39,10 +39,16 @@ def load_relations(reverse=False):
     return relations
 
 
-def dataset_from_relations(relations, reverse_relations, columns, num_train_examples, num_test_examples):
+def dataset_from_relations(relations, reverse_relations, columns, num_test_examples, num_train_examples=None):
     num_test_examples = num_test_examples // 2
-    train_df = relations[:-num_test_examples].head(num_train_examples)
-    eval_df = reverse_relations[:-num_test_examples].head(num_train_examples)
+    eval_df = reverse_relations
+    train_df = relations
+    if num_train_examples:
+        train_df = train_df.head(num_train_examples)
+        eval_df = eval_df.head(num_train_examples)
+    train_df = train_df[:-num_test_examples]
+    eval_df = eval_df[:-num_test_examples]
+
     test_df = pd.concat([relations[-num_test_examples:], reverse_relations[-num_test_examples:]])
 
     ds = datasets.DatasetDict()
@@ -92,7 +98,7 @@ def predict(model, tokenizer, prompt, only_continuation=True):
         pred = pred[len(prompt):]
     return pred
 
-def graph_positions(relations):
+def graph_positions(relations, seed=30):
     """
     Calculate node positions for plotting.
     """
@@ -100,7 +106,7 @@ def graph_positions(relations):
     for _, row in relations.iterrows():
         w = 1.0 if row['chosen'] == 'friend' else -3.
         G.add_edge(row['first'], row['second'], weight=w)
-    pos = nx.spring_layout(G, seed=30, weight='weight', k=0.1)
+    pos = nx.spring_layout(G, seed=seed, weight='weight', k=0.1)
     return pos
 
 
